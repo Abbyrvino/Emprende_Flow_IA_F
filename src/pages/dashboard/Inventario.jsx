@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useDictation } from '../../hooks/useDictation';
 
 const FORM_INICIAL = {
   nombre: '', descripcion: '', precio: '', stock: '', id_categoria: '', imagen: null,
@@ -23,6 +24,12 @@ const Inventario = () => {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const [generandoDescripcion, setGenerandoDescripcion] = useState(false);
+
+  const { isListening: dictandoNombre, startDictation: micNombre } = useDictation();
+
+  const handleAppendDictation = (field, text) => {
+    setForm((f) => ({ ...f, [field]: f[field] ? `${f[field]} ${text}` : text }));
+  };
 
   const cargar = async () => {
     try {
@@ -201,7 +208,17 @@ const Inventario = () => {
               {error && <div className="alert alert--error">{error}</div>}
 
               <div className="form-group">
-                <label>Nombre *</label>
+                <div className="label-row">
+                  <label>Nombre *</label>
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    onClick={() => micNombre((txt) => handleAppendDictation('nombre', txt))}
+                    title="Dictar nombre por voz"
+                  >
+                    {dictandoNombre ? '🎤 Escuchando...' : '🎤 Dictar'}
+                  </button>
+                </div>
                 <input name="nombre" className="input" value={form.nombre} onChange={handleChange} required />
               </div>
 

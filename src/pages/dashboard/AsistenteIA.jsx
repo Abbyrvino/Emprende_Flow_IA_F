@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../../services/api';
+import { useDictation } from '../../hooks/useDictation';
 
 const AsistenteIA = () => {
   const [form, setForm] = useState({ nombre: '', caracteristicas: '' });
@@ -7,6 +8,13 @@ const AsistenteIA = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copiado, setCopiado] = useState(false);
+
+  const { isListening: dictandoNombre, startDictation: micNombre } = useDictation();
+  const { isListening: dictandoCarac, startDictation: micCarac } = useDictation();
+
+  const handleAppendDictation = (field, text) => {
+    setForm((f) => ({ ...f, [field]: f[field] ? `${f[field]} ${text}` : text }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,7 +53,17 @@ const AsistenteIA = () => {
 
           <form onSubmit={handleSubmit} className="ia-form">
             <div className="form-group">
-              <label htmlFor="nombre-ia">Nombre del producto *</label>
+              <div className="label-row">
+                <label htmlFor="nombre-ia">Nombre del producto *</label>
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => micNombre((txt) => handleAppendDictation('nombre', txt))}
+                  title="Dictar nombre por voz"
+                >
+                  {dictandoNombre ? '🎤 Escuchando...' : '🎤 Dictar'}
+                </button>
+              </div>
               <input
                 id="nombre-ia"
                 className="input"
@@ -57,7 +75,17 @@ const AsistenteIA = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="caracteristicas-ia">Características *</label>
+              <div className="label-row">
+                <label htmlFor="caracteristicas-ia">Características *</label>
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => micCarac((txt) => handleAppendDictation('caracteristicas', txt))}
+                  title="Dictar características por voz"
+                >
+                  {dictandoCarac ? '🎤 Escuchando...' : '🎤 Dictar'}
+                </button>
+              </div>
               <textarea
                 id="caracteristicas-ia"
                 className="input textarea"
