@@ -5,6 +5,13 @@ const FORM_INICIAL = {
   nombre: '', descripcion: '', precio: '', stock: '', id_categoria: '', imagen: null,
 };
 
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = reject;
+  reader.readAsDataURL(file);
+});
+
 const Inventario = () => {
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -15,6 +22,7 @@ const Inventario = () => {
   const [preview, setPreview] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  const [generandoDescripcion, setGenerandoDescripcion] = useState(false);
 
   const cargar = async () => {
     try {
@@ -82,6 +90,46 @@ const Inventario = () => {
       setError(err.response?.data?.error || 'Error al guardar.');
     } finally {
       setGuardando(false);
+    }
+  };
+
+  const handleGenerarDescripcion = async () => {
+    if (!form.nombre.trim()) {
+      setError('Escribe el nombre del producto antes de usar IA.');
+      return;
+    }
+
+    setGenerandoDescripcion(true);
+    setError('');
+
+    try {
+      const categoria = categorias.find((c) => String(c.id) === String(form.id_categoria));
+
+      const partes = [
+        form.descripcion && `Descripcion actual: ${form.descripcion}`,
+        categoria?.nombre && `Categoria: ${categoria.nombre}`,
+        form.precio && `Precio: Bs. ${form.precio}`,
+      ].filter(Boolean);
+
+      let imagen = '';
+
+      if (form.imagen) {
+        imagen = await fileToDataUrl(form.imagen);
+      } else if (preview?.startsWith('http')) {
+        imagen = preview;
+      }
+
+      const { data } = await api.post('/ia/descripcion', {
+        nombre: form.nombre,
+        caracteristicas: partes.join('\n'),
+        imagen,
+      });
+
+      setForm((actual) => ({ ...actual, descripcion: data.descripcion }));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al generar la descripcion con IA.');
+    } finally {
+      setGenerandoDescripcion(false);
     }
   };
 
@@ -177,8 +225,19 @@ const Inventario = () => {
               </div>
 
               <div className="form-group">
-                <label>Descripción</label>
-                <textarea name="descripcion" className="input textarea" rows={2} value={form.descripcion} onChange={handleChange} />
+                <div className="label-row">
+                  <label>Descripción</label>
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    onClick={handleGenerarDescripcion}
+                    disabled={generandoDescripcion || guardando}
+                    title="Generar descripcion con IA usando los datos e imagen del producto"
+                  >
+                    {generandoDescripcion ? 'IA...' : 'IA'}
+                  </button>
+                </div>
+                <textarea name="descripcion" className="input textarea" rows={3} value={form.descripcion} onChange={handleChange} />
               </div>
 
               <div className="form-group">
